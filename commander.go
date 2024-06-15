@@ -1,11 +1,16 @@
 package commander
 
-import "fmt"
+import (
+	"fmt"
+
+	ns "github.com/hashibuto/nilshell"
+)
 
 type Commander struct {
 	Config Config
 
 	commandMap map[string]*Command
+	shell      *ns.NilShell
 }
 
 // NewCommander returns a new Commander instance
@@ -26,10 +31,14 @@ func NewCommander(config Config) (*Commander, error) {
 		commandMap[cmd.Name] = cmd
 	}
 
-	return &Commander{
+	c := &Commander{
 		Config:     config,
 		commandMap: commandMap,
-	}, nil
+	}
+	c.shell = ns.NewShell(config.Prompt, c.shellCompletionFunc, c.shellExecutionFunc)
+	c.shell.AutoCompleteSuggestStyle = c.Config.AutoCompleteSuggestStyle
+
+	return c, nil
 }
 
 // LocateCommand will attempt to locate a command from a series of tokens presented as arguments to the Commander.
@@ -59,4 +68,16 @@ func (c *Commander) LocateCommand(tokens []string) (*Command, []string) {
 	}
 
 	return curCommand, tokens[lastMatchIndex+1:]
+}
+
+func (c *Commander) shellCompletionFunc(beforeAndCursor string, afterCursor string, full string) []*ns.AutoComplete {
+	return nil
+}
+
+func (c *Commander) shellExecutionFunc(shell *ns.NilShell, input string) {
+
+}
+
+func (c *Commander) Run() error {
+	return c.shell.ReadUntilTerm()
 }

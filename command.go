@@ -9,11 +9,12 @@ type Command struct {
 	Name        string
 	Description string
 	Flags       []*Flag
-	Argument    *Argument
+	Arguments   []*Argument
 	SubCommands []*Command
 
 	commandMap map[string]*Command
 	flagMap    map[string]*Flag
+	argMap     map[string]*Argument
 }
 
 // Validate ensures that the command is valid, returning a descriptive error if it is not.
@@ -21,6 +22,7 @@ type Command struct {
 func (c *Command) Validate() error {
 	c.commandMap = map[string]*Command{}
 	c.flagMap = map[string]*Flag{}
+	c.argMap = map[string]*Argument{}
 
 	for _, subCmd := range c.SubCommands {
 		if _, exists := c.commandMap[subCmd.Name]; exists {
@@ -30,8 +32,14 @@ func (c *Command) Validate() error {
 		c.commandMap[subCmd.Name] = subCmd
 	}
 
-	if c.Argument != nil {
-		err := c.Argument.Validate()
+	for _, arg := range c.Arguments {
+		if _, exists := c.flagMap[arg.Name]; exists {
+			return fmt.Errorf("argument name \"%s\" on command \"%s\" is already defined as a flag", arg.Name, c.Name)
+		}
+		if _, exists := c.argMap[arg.Name]; exists {
+			return fmt.Errorf("argument name \"%s\" on command \"%s\" is defined multiple times", arg.Name, c.Name)
+		}
+		err := arg.Validate()
 		if err != nil {
 			return err
 		}
@@ -54,9 +62,10 @@ func (c *Command) Validate() error {
 	return nil
 }
 
-func (c *Command) ClassifyTokens(tokens []string) (map[string]any, []any, error) {
-	args := []any{}
-	flagMap := map[string]any{}
+// ClassifyTokens attempts to classify the token array using the defined flags and arguments, in order to populate a name to value mapping
+func (c *Command) ClassifyTokens(tokens []string) (map[string]any, error) {
+	tokenMap := map[string]any{}
+	argNum := 0
 
 	noFlags := false
 	var curFlag *Flag
@@ -64,6 +73,18 @@ func (c *Command) ClassifyTokens(tokens []string) (map[string]any, []any, error)
 		name := ""
 		value := ""
 		hasValue := false
+
+		if curFlag != nil {
+			// Grab the value for the active flag
+			err := curFlag.PopulateMap(t, tokenMap)
+			if err != nil {
+				return nil, fmt.Errorf("invalid value for flag %s: %w", curFlag.GetInvocation(), err)
+			}
+
+			curFlag = nil
+			continue
+		}
+
 		if !noFlags {
 			if t == "--" {
 				noFlags = true
@@ -82,11 +103,11 @@ func (c *Command) ClassifyTokens(tokens []string) (map[string]any, []any, error)
 				}
 
 				if len(name) > 1 {
-					return nil, nil, fmt.Errorf("malformed flag %s, did you mean -%s", t, t)
+					return nil, fmt.Errorf("malformed flag %s, did you mean -%s", t, t)
 				}
 
 				if len(name) == 0 {
-					return nil, nil, fmt.Errorf("missing flag name")
+					return nil, fmt.Errorf("missing flag name")
 				}
 			}
 
@@ -102,7 +123,7 @@ func (c *Command) ClassifyTokens(tokens []string) (map[string]any, []any, error)
 				}
 
 				if len(name) == 1 {
-					return nil, nil, fmt.Errorf("malformed flag %s, did you mean -%s", t, name)
+					return nil, fmt.Errorf("malformed flag %s, did you mean -%s", t, name)
 				}
 			}
 
@@ -110,23 +131,43 @@ func (c *Command) ClassifyTokens(tokens []string) (map[string]any, []any, error)
 			if len(name) > 0 {
 				flag, ok := c.flagMap[name]
 				if !ok {
-					return nil, nil, fmt.Errorf("unrecognized flag %s", name)
+					return nil, fmt.Errorf("unrecognized flag %s", name)
 				}
 
 				if hasValue {
-					if flag.ShortName != "" {
-						flagMap[flag.ShortName] = value
-					}
-
-					if flag.Name != "" {
-						flagMap[flag.Name] = value
+					err := curFlag.PopulateMap(value, tokenMap)
+					if err != nil {
+						return nil, fmt.Errorf("invalid value for flag %s: %w", curFlag.GetInvocation(), err)
 					}
 				} else {
-					curFlag = flag
+					if flag.ArgType != ArgTypeBool {
+						curFlag = flag
+					}
 				}
 			}
 		}
+
+		if len(c.Arguments) == 0 {
+			return nil, fmt.Errorf("command \"%s\" does not accept any positional arguments", c.Name)
+		}
+
+		var curArg *Argument
+		if argNum >= len(c.Arguments) {
+			if !c.Arguments[len(c.Arguments)-1].AllowMultiple {
+				return nil, fmt.Errorf("too many positional arguments provided")
+			}
+
+			curArg = c.Arguments[len(c.Arguments)-1]
+		} else {
+			curArg = c.Arguments[argNum]
+		}
+
+		err := curArg.PopulateMap(t, tokenMap)
+		if err != nil {
+			return nil, fmt.Errorf("invalid value for argument %s: %w", curArg.Name, err)
+		}
+		argNum++
 	}
 
-	return nil, nil
+	return tokenMap, nil
 }

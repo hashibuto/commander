@@ -1,6 +1,8 @@
 package commander
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // an argument represents a positional argument.  it is non-defaultable
 type Argument struct {
@@ -28,6 +30,30 @@ func (a *Argument) Validate() error {
 		if inferredType != a.ArgType {
 			return fmt.Errorf("value in OneOf \"%v\" did not match the argument type \"%s\"", oneOf, a.ArgType)
 		}
+	}
+
+	return nil
+}
+
+// GetValueFromString parses the provided value according to the argument's underlying data type and returns that parsed value, or an error
+func (a *Argument) GetValueFromString(value string) (any, error) {
+	return GetValueFromString(a.ArgType, value)
+}
+
+func (a *Argument) PopulateMap(value string, target map[string]any) error {
+	parsedValue, err := GetValueFromString(a.ArgType, value)
+	if err != nil {
+		return err
+	}
+
+	if a.AllowMultiple {
+		if _, ok := target[a.Name]; !ok {
+			target[a.Name] = []any{}
+		}
+
+		target[a.Name] = append(target[a.Name].([]any), parsedValue)
+	} else {
+		target[a.Name] = parsedValue
 	}
 
 	return nil

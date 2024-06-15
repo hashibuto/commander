@@ -1,6 +1,9 @@
 package commander
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Flag struct {
 	Name          string
@@ -53,6 +56,52 @@ func (f *Flag) Validate() error {
 		inferredType := InferArgType(oneOf)
 		if inferredType != f.ArgType {
 			return fmt.Errorf("value in OneOf \"%v\" did not match the argument type \"%s\"", oneOf, f.ArgType)
+		}
+	}
+
+	return nil
+}
+
+// GetValueFromString parses the provided value according to the flag's underlying data type and returns that parsed value, or an error
+func (f *Flag) GetValueFromString(value string) (any, error) {
+	return GetValueFromString(f.ArgType, value)
+}
+
+func (f *Flag) GetInvocation() string {
+	invocations := []string{}
+	if f.ShortName != "" {
+		invocations = append(invocations, fmt.Sprintf("-%s", f.ShortName))
+	}
+	if f.ShortName != "" {
+		invocations = append(invocations, fmt.Sprintf("--%s", f.Name))
+	}
+
+	return strings.Join(invocations, " / ")
+}
+
+func (f *Flag) PopulateMap(value string, target map[string]any) error {
+	keys := []string{}
+	if f.ShortName != "" {
+		keys = append(keys, f.ShortName)
+	}
+	if f.Name != "" {
+		keys = append(keys, f.Name)
+	}
+
+	for _, key := range keys {
+		parsedValue, err := GetValueFromString(f.ArgType, value)
+		if err != nil {
+			return err
+		}
+
+		if f.AllowMultiple {
+			if _, ok := target[key]; !ok {
+				target[key] = []any{}
+			}
+
+			target[key] = append(target[key].([]any), parsedValue)
+		} else {
+			target[key] = parsedValue
 		}
 	}
 
