@@ -7,6 +7,7 @@ commander is an interactive command processor, similar to python's CMD2, but wri
 
 # demo
 a brief screen recording showcasing some of commander's capabilities
+
 ![demo](https://github.com/hashibuto/commander/tree/master/example/demo.gif)
 
 # example
