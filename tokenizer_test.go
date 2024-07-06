@@ -7,8 +7,11 @@ import (
 )
 
 func TestTokenizer_LeadingTrailing(t *testing.T) {
-	line := "  hello   there  macaroni "
-	tokens := Tokenize(line)
+	line := "  hello   there  macaroni    "
+	tokenGroups := Tokenize(line)
+	assert.Len(t, tokenGroups, 1)
+	tokens := tokenGroups[0].Tokens
+
 	assert.Len(t, tokens, 3)
 	assert.Equal(t, tokens[0], "hello")
 	assert.Equal(t, tokens[1], "there")
