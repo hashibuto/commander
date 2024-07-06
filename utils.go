@@ -34,3 +34,13 @@ func GetValueFromString(argType ArgType, value string) (any, error) {
 
 	return nil, fmt.Errorf("unknown arg type")
 }
+
+func MatchesOneOf(oneOf []any, sample any) bool {
+	for _, one := range oneOf {
+		if fmt.Sprintf("%s", one) == fmt.Sprintf("%s", sample) {
+			return true
+		}
+	}
+
+	return false
+}

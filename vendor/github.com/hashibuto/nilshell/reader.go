@@ -7,16 +7,17 @@ import (
 	"os/exec"
 	"regexp"
 	"runtime/debug"
+	"strconv"
 	"strings"
-	"sync"
 	"syscall"
 
+	tm "github.com/hashibuto/nilshell/pkg/term"
 	"golang.org/x/term"
 )
 
 type ProcessingCode int8
 
-var EscapeFinder = regexp.MustCompile("\033\\[[^m]+m")
+var EscapeFinder = regexp.MustCompile("\x1b\\[[^a-zA-Z]+[a-zA-Z]")
 
 const (
 	CodeContinue ProcessingCode = iota
@@ -29,16 +30,15 @@ type LineReader struct {
 	lastSearchText  []rune
 	nilShell        *NilShell
 	isReverseSearch bool
-	prompt          string
 	promptLength    int
 	completer       Completer
 	bufferOffset    int
 	resizeChan      chan os.Signal
 	buffer          []rune
-	lock            *sync.Mutex
 	winWidth        int
 	winHeight       int
 	cursorRow       int
+	resizeComplete  chan struct{}
 }
 
 var reverseSearchPrompt = "(reverse-i- search: `"
@@ -46,15 +46,15 @@ var reverseSearchPrompt = "(reverse-i- search: `"
 // NewLineReader creates a new LineReader object
 func NewLineReader(completer Completer, resizeChan chan os.Signal, nilShell *NilShell) *LineReader {
 	lr := &LineReader{
-		completer:  completer,
-		resizeChan: resizeChan,
-		buffer:     []rune{},
-		lock:       &sync.Mutex{},
-		nilShell:   nilShell,
+		completer:      completer,
+		resizeChan:     resizeChan,
+		buffer:         []rune{},
+		nilShell:       nilShell,
+		resizeComplete: make(chan struct{}, 1),
 	}
 
+	lr.winHeight, lr.winWidth = getWindowDimensions()
 	go lr.resizeWatcher()
-	lr.resizeWindow(false)
 
 	return lr
 }
@@ -100,6 +100,7 @@ func (lr *LineReader) Read() (string, bool, error) {
 		if err != nil {
 			return "", false, err
 		}
+
 		iString := string(iBuf[:n])
 		code := lr.processInput(iString, lr.nilShell)
 		switch code {
@@ -130,9 +131,6 @@ func (lr *LineReader) resizeWatcher() {
 
 // processInput executes one iteration of input processing which would occur in the interactive read loop
 func (lr *LineReader) processInput(input string, n *NilShell) ProcessingCode {
-	lr.lock.Lock()
-	defer lr.lock.Unlock()
-
 	switch input {
 	case KEY_CTRL_R:
 		lr.isReverseSearch = true
@@ -207,7 +205,7 @@ func (lr *LineReader) processInput(input string, n *NilShell) ProcessingCode {
 			if autoComplete != nil {
 				if len(autoComplete) == 1 {
 					ac := autoComplete[0]
-					lr.completeText([]rune(ac.Name))
+					lr.completeText([]rune(ac.Value))
 				} else if len(autoComplete) > 1 && len(autoComplete) <= n.AutoCompleteLimit {
 					lr.displayAutocomplete(autoComplete, n)
 				} else if len(autoComplete) > n.AutoCompleteLimit {
@@ -221,10 +219,25 @@ func (lr *LineReader) processInput(input string, n *NilShell) ProcessingCode {
 			lr.deleteAtCurrentPos()
 		}
 	default:
-		lr.insertText([]rune(input))
+		if strings.Contains(input, ";") && strings.HasSuffix(input, "R") {
+			// this got triggered by a window resize and subsequent request for the new cursor position
+			lr.cursorRow, _ = extractCursorPos(input)
+			lr.winHeight, lr.winWidth = getWindowDimensions()
+		} else {
+			lr.insertText([]rune(input))
+		}
 	}
 
 	return CodeContinue
+}
+
+func extractCursorPos(input string) (int, int) {
+	section := input[2 : len(input)-1]
+	parts := strings.Split(section, ";")
+	row, _ := strconv.Atoi(parts[0])
+	col, _ := strconv.Atoi(parts[1])
+
+	return row, col
 }
 
 // displayTooManyAutocomplete displays the too many autocomplete suggestions message
@@ -244,25 +257,30 @@ func (lr *LineReader) displayTooManyAutocomplete(autoComplete []*AutoComplete, n
 
 // displayAutocomplete displays the autocomplete suggestions
 func (lr *LineReader) displayAutocomplete(autoComplete []*AutoComplete, ns *NilShell) {
+	disp := make([]string, len(autoComplete))
+	for i, ac := range autoComplete {
+		disp[i] = ac.Display
+	}
+
 	y, _ := getCursorPos()
 	fmt.Printf("\r\n%s", ns.AutoCompleteSuggestStyle)
 	y++
-	total := 0
-	for _, ac := range autoComplete {
-		text := ac.Name
-		if len(text) > 12 {
-			text = text[:12] + "..."
-		}
-		total += 18
-		if total > lr.winWidth {
+
+	var colNum int
+	colWidth, numCols := CalculateColumnWidth(disp, ns.lineReader.winWidth, 2, 2)
+	for i, ac := range autoComplete {
+		fmt.Printf("%s", tm.PadRight(ac.Display, colWidth, 2))
+		colNum = i % numCols
+		if colNum == numCols-1 {
+			// End of line
 			y++
-			fmt.Printf("\r\n")
-			total = 18
+			fmt.Print("\r\n")
 		}
-		fmt.Printf("%-20s", text)
 	}
-	y++
-	fmt.Printf("%s\n\r", CODE_RESET)
+	if colNum != numCols-1 {
+		y++
+		fmt.Printf("%s\n\r", CODE_RESET)
+	}
 	if y > lr.winHeight {
 		y = lr.winHeight
 	}
@@ -337,8 +355,25 @@ func (lr *LineReader) renderFromCursor() {
 	if lr.isReverseSearch {
 		lr.renderComplete()
 	} else {
-		lr.setCursorPos()
-		fmt.Printf("%s", string(lr.buffer[lr.bufferOffset:]))
+		newLines := 0
+		row, col := lr.setCursorPos()
+		bufferOffset := lr.bufferOffset
+		for len(lr.buffer) > bufferOffset {
+			remaining := len(lr.buffer) - bufferOffset
+			rowLen := (lr.winWidth - col) + 1
+			if rowLen > remaining {
+				rowLen = remaining
+			} else {
+				if row >= lr.winHeight {
+					newLines++
+				}
+			}
+
+			fmt.Printf("%s", string(lr.buffer[bufferOffset:bufferOffset+rowLen]))
+			bufferOffset += rowLen
+			col = 1
+		}
+		lr.cursorRow -= newLines
 		lr.renderEraseForward(true)
 	}
 }
@@ -370,11 +405,13 @@ func (lr *LineReader) renderComplete() {
 	if lr.isReverseSearch {
 		lr.lastSearchText = []rune(lr.nilShell.History.FindMostRecentMatch(string(lr.buffer)))
 		setCursorPos(lr.cursorRow, 1)
+
 		fmt.Printf("%s%s`): %s", reverseSearchPrompt, string(lr.buffer), string(lr.lastSearchText))
 		lr.renderEraseForward(false)
 		lr.setCursorPos()
 	} else {
 		setCursorPos(lr.cursorRow, 1)
+
 		fmt.Printf("%s", lr.nilShell.Prompt)
 		fmt.Printf("%s", string(lr.buffer))
 		lr.renderEraseForward(false)
@@ -385,17 +422,11 @@ func (lr *LineReader) renderComplete() {
 
 // resizeWindow re-renders according to the window size
 func (lr *LineReader) resizeWindow(render bool) {
-	lr.lock.Lock()
-	defer lr.lock.Unlock()
-
-	lr.winHeight, lr.winWidth = getWindowDimensions()
-	if render {
-		lr.renderComplete()
-	}
+	requestCursorPos()
 }
 
 // setCursorPos sets the current cursor position based on the linear offset in the command input
-func (lr *LineReader) setCursorPos() {
+func (lr *LineReader) setCursorPos() (int, int) {
 	// Determine the linear cursor position, including the prompt
 	var promptOffset int
 	if lr.isReverseSearch {
@@ -406,12 +437,15 @@ func (lr *LineReader) setCursorPos() {
 	linearCursorPos := promptOffset + lr.bufferOffset
 	curCursorRow := lr.cursorRow + int(linearCursorPos/lr.winWidth)
 	curCursorCol := (linearCursorPos % lr.winWidth) + 1
-	// deal with the end of terminal (vertical situation)
+
+	// if we're editing on the final row, move back
 	if curCursorRow > lr.winHeight {
 		lr.cursorRow -= (curCursorRow - lr.winHeight)
 		curCursorRow = lr.winHeight
 	}
 	setCursorPos(curCursorRow, curCursorCol)
+
+	return curCursorRow, curCursorCol
 }
 
 // Reset the LineReader buffer and return its contents.

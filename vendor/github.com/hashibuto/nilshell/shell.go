@@ -10,7 +10,8 @@ import (
 )
 
 type AutoComplete struct {
-	Name string
+	Value   string
+	Display string
 }
 
 // Completer receives a string of everything before the cursor, after the cursor, and the entire command string.  It
@@ -46,6 +47,7 @@ func NewShell(prompt string, onComplete Completer, onExecute Executor) *NilShell
 		AutoCompleteLimit: 20,
 		sigs:              sigs,
 		onExecute:         onExecute,
+		Debug:             true,
 	}
 	ns.lineReader = NewLineReader(onComplete, sigs, ns)
 	signal.Notify(ns.sigs, syscall.SIGWINCH)

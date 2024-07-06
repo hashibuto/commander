@@ -64,7 +64,7 @@ func (suite *CommanderTestSuite) SetupTest() {
 
 func (suite *CommanderTestSuite) TestLocateCommand() {
 	tokens := []string{"farm", "add", "-t", "mammal"}
-	command, commandTokens := suite.TheCommander.LocateCommand(tokens)
+	command, _, commandTokens := suite.TheCommander.LocateCommand(tokens)
 	assert.NotNil(suite.T(), command)
 	assert.Len(suite.T(), commandTokens, 2)
 }

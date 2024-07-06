@@ -9,7 +9,7 @@ type Config struct {
 
 func (c *Config) ApplyDefaults() {
 	if c.Prompt == "" {
-		c.Prompt = "»"
+		c.Prompt = "» "
 	}
 
 	if c.AutoCompleteSuggestStyle == "" {

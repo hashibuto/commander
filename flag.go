@@ -3,6 +3,8 @@ package commander
 import (
 	"fmt"
 	"strings"
+
+	ns "github.com/hashibuto/nilshell"
 )
 
 type Flag struct {
@@ -52,6 +54,12 @@ func (f *Flag) Validate() error {
 		return fmt.Errorf("AllowMultiple is not compatible with boolean flags")
 	}
 
+	if f.AllowMultiple && f.DefaultValue != nil {
+		if _, ok := f.DefaultValue.([]any); !ok {
+			return fmt.Errorf("DefaultValue must be a []any when AllowMultiple is true")
+		}
+	}
+
 	for _, oneOf := range f.OneOf {
 		inferredType := InferArgType(oneOf)
 		if inferredType != f.ArgType {
@@ -72,11 +80,20 @@ func (f *Flag) GetInvocation() string {
 	if f.ShortName != "" {
 		invocations = append(invocations, fmt.Sprintf("-%s", f.ShortName))
 	}
-	if f.ShortName != "" {
+	if f.Name != "" {
 		invocations = append(invocations, fmt.Sprintf("--%s", f.Name))
 	}
 
 	return strings.Join(invocations, " / ")
+}
+
+func (f *Flag) GetPaddedInvocation() string {
+	invocation := f.GetInvocation()
+	if strings.HasPrefix(invocation, "--") {
+		return fmt.Sprintf("     %s", invocation)
+	}
+
+	return invocation
 }
 
 func (f *Flag) PopulateMap(value string, target map[string]any) error {
@@ -94,6 +111,12 @@ func (f *Flag) PopulateMap(value string, target map[string]any) error {
 			return err
 		}
 
+		if f.OneOf != nil {
+			if !MatchesOneOf(f.OneOf, parsedValue) {
+				return fmt.Errorf("\"%s\" does not belong to the collection defined by the flag", parsedValue)
+			}
+		}
+
 		if f.AllowMultiple {
 			if _, ok := target[key]; !ok {
 				target[key] = []any{}
@@ -103,6 +126,54 @@ func (f *Flag) PopulateMap(value string, target map[string]any) error {
 		} else {
 			target[key] = parsedValue
 		}
+	}
+
+	return nil
+}
+
+func (f *Flag) PopulateDefault(target map[string]any) error {
+	keys := []string{}
+	if f.ShortName != "" {
+		keys = append(keys, f.ShortName)
+	}
+	if f.Name != "" {
+		keys = append(keys, f.Name)
+	}
+
+	for _, key := range keys {
+		// Skip anything already populated
+		if _, exists := target[key]; exists {
+			continue
+		}
+
+		if f.DefaultValue == nil && f.IsRequired {
+			return fmt.Errorf("flag %s is required", f.GetInvocation())
+		}
+
+		target[key] = f.DefaultValue
+	}
+
+	return nil
+}
+
+func (f *Flag) SuggestValues(prefix string) []*ns.AutoComplete {
+	if f.OneOf != nil {
+		values := []*ns.AutoComplete{}
+		for _, oneOf := range f.OneOf {
+			oneOfStr := fmt.Sprintf("%s", oneOf)
+			if strings.HasPrefix(oneOfStr, prefix) {
+				values = append(values, &ns.AutoComplete{
+					Value:   oneOfStr,
+					Display: oneOfStr,
+				})
+			}
+		}
+
+		return values
+	}
+
+	if f.Completer != nil {
+		return f.Completer(prefix)
 	}
 
 	return nil

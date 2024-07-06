@@ -1,7 +1,13 @@
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/hashibuto/nilshell v0.1.16 h1:fYfbmyNq8Ycw1sHqDkyYexymNXjl9TKD/yKKZ97/GhA=
-github.com/hashibuto/nilshell v0.1.16/go.mod h1:OyliDOagrtUHz7DnJ40++YL/oJHI/m0TUOenZWKd5oA=
+github.com/hashibuto/nilshell v0.2.0 h1:BKJXcw8cCpVUCZ2IhpXAYXNcP4YmSfGCE7IWnxRdgsE=
+github.com/hashibuto/nilshell v0.2.0/go.mod h1:Syxr+r8/XHBypVKQUIPNz4TWEzTJN7x9kW81Flqj4hQ=
+github.com/hashibuto/nilshell v0.2.1 h1:2UjGk0Zf6rMTbLJFbrvaSqDtCAaBfzxJHs0o7EgK1C8=
+github.com/hashibuto/nilshell v0.2.1/go.mod h1:Syxr+r8/XHBypVKQUIPNz4TWEzTJN7x9kW81Flqj4hQ=
+github.com/hashibuto/nilshell v0.2.2 h1:SSRZrCELevlVKF8V0qtkWuDOWLzQarMRRTMXVejMgDk=
+github.com/hashibuto/nilshell v0.2.2/go.mod h1:Syxr+r8/XHBypVKQUIPNz4TWEzTJN7x9kW81Flqj4hQ=
+github.com/hashibuto/nilshell v0.2.3 h1:nEG6CXJJIt77vC2F5vANTm3gac6SNo6ZVhrVBV5fT8c=
+github.com/hashibuto/nilshell v0.2.3/go.mod h1:Syxr+r8/XHBypVKQUIPNz4TWEzTJN7x9kW81Flqj4hQ=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsTg=

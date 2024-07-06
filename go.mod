@@ -3,7 +3,7 @@ module github.com/hashibuto/commander
 go 1.21.4
 
 require (
-	github.com/hashibuto/nilshell v0.1.16
+	github.com/hashibuto/nilshell v0.2.3
 	github.com/stretchr/testify v1.9.0
 )
 

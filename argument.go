@@ -2,6 +2,9 @@ package commander
 
 import (
 	"fmt"
+	"strings"
+
+	ns "github.com/hashibuto/nilshell"
 )
 
 // an argument represents a positional argument.  it is non-defaultable
@@ -46,6 +49,12 @@ func (a *Argument) PopulateMap(value string, target map[string]any) error {
 		return err
 	}
 
+	if a.OneOf != nil {
+		if !MatchesOneOf(a.OneOf, parsedValue) {
+			return fmt.Errorf("\"%s\" does not belong to the collection defined by the argument", parsedValue)
+		}
+	}
+
 	if a.AllowMultiple {
 		if _, ok := target[a.Name]; !ok {
 			target[a.Name] = []any{}
@@ -54,6 +63,29 @@ func (a *Argument) PopulateMap(value string, target map[string]any) error {
 		target[a.Name] = append(target[a.Name].([]any), parsedValue)
 	} else {
 		target[a.Name] = parsedValue
+	}
+
+	return nil
+}
+
+func (a *Argument) SuggestValues(prefix string) []*ns.AutoComplete {
+	if a.OneOf != nil {
+		values := []*ns.AutoComplete{}
+		for _, oneOf := range a.OneOf {
+			oneOfStr := fmt.Sprintf("%s", oneOf)
+			if strings.HasPrefix(oneOfStr, prefix) {
+				values = append(values, &ns.AutoComplete{
+					Value:   oneOfStr,
+					Display: oneOfStr,
+				})
+			}
+		}
+
+		return values
+	}
+
+	if a.Completer != nil {
+		return a.Completer(prefix)
 	}
 
 	return nil
