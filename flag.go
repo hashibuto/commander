@@ -43,20 +43,20 @@ func (f *Flag) Validate() error {
 	}
 
 	if f.OneOf != nil && f.ArgType == ArgTypeBool {
-		return fmt.Errorf("OneOf is not compatible with boolean flags")
+		return fmt.Errorf("OneOf is not compatible with boolean flags in %s", f.GetInvocation())
 	}
 
 	if f.Completer != nil && f.ArgType == ArgTypeBool {
-		return fmt.Errorf("Completer is not compatible with boolean flags")
+		return fmt.Errorf("Completer is not compatible with boolean flags in %s", f.GetInvocation())
 	}
 
 	if f.AllowMultiple && f.ArgType == ArgTypeBool {
-		return fmt.Errorf("AllowMultiple is not compatible with boolean flags")
+		return fmt.Errorf("AllowMultiple is not compatible with boolean flags in %s", f.GetInvocation())
 	}
 
 	if f.AllowMultiple && f.DefaultValue != nil {
 		if _, ok := f.DefaultValue.([]any); !ok {
-			return fmt.Errorf("DefaultValue must be a []any when AllowMultiple is true")
+			return fmt.Errorf("DefaultValue must be a []any when AllowMultiple is true in %s", f.GetInvocation())
 		}
 	}
 
