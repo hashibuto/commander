@@ -68,7 +68,20 @@ func (c *Command) Validate(parentFlags map[string]struct{}) error {
 		ArgType:     ArgTypeBool,
 		Description: "display contextual help",
 	}
-	c.Flags = append(c.Flags, helpFlag)
+
+	// this is required b/c of singly defined internal commands which get "validated" more than once in the unit tests, and thus get multiple
+	// --help flags otherwise
+	found := false
+	for _, flag := range c.Flags {
+		if flag.Name == helpFlag.Name && flag.Description == helpFlag.Description {
+			found = true
+			break
+		}
+	}
+	if !found {
+		c.Flags = append(c.Flags, helpFlag)
+	}
+
 	for _, flag := range c.Flags {
 		err := flag.Validate()
 		if err != nil {
@@ -90,7 +103,7 @@ func (c *Command) Validate(parentFlags map[string]struct{}) error {
 
 		if flag.ShortName != "" {
 			if _, exists := parentFlags[flag.ShortName]; exists {
-				return fmt.Errorf("flag short name \"%s\" on command \"%s\" is already defined as parent command flag", flag.ShortName, c.Name)
+				return fmt.Errorf("flag short name \"%s\" on command \"%s\" is already defined as parent command flag %+v", flag.ShortName, c.Name, parentFlags)
 			}
 
 			if _, exists := c.flagMap[flag.ShortName]; exists {
@@ -108,7 +121,14 @@ func (c *Command) Validate(parentFlags map[string]struct{}) error {
 		}
 
 		c.commandMap[subCmd.Name] = subCmd
-		subCmd.Validate(parentFlags)
+		parentCopy := map[string]struct{}{}
+		for k, v := range parentFlags {
+			parentCopy[k] = v
+		}
+		err := subCmd.Validate(parentCopy)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
