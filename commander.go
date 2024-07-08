@@ -189,7 +189,7 @@ func (c *Commander) shellExecutionFunc(shell *ns.NilShell, input string) {
 
 			isHelp := slices.Contains(tokens, "--help")
 			if isHelp {
-				fmt.Println(command.GetHelpString())
+				fmt.Println(command.GetHelpString(parentFlags))
 				return
 			}
 
