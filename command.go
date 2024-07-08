@@ -425,7 +425,7 @@ func (c *Command) getInvocation() string {
 	return strings.Join(parts, " ")
 }
 
-func (c *Command) GetHelpString() string {
+func (c *Command) GetHelpString(parentFlags []*Flag) string {
 	lines := []string{"Invocation:", c.getInvocation()}
 
 	if len(c.SubCommands) > 0 {
@@ -453,9 +453,19 @@ func (c *Command) GetHelpString() string {
 		}
 	}
 
-	if len(c.Flags) > 0 {
-		lines = append(lines, "", "Flags:")
-		for _, flag := range c.Flags {
+	for i, flags := range [][]*Flag{parentFlags, c.Flags} {
+		if len(flags) == 0 {
+			continue
+		}
+
+		var label string
+		if i == 0 {
+			label = "Inherited flags:"
+		} else {
+			label = "Flags:"
+		}
+		lines = append(lines, "", label)
+		for _, flag := range flags {
 			description := []string{}
 			if len(flag.Description) > 0 {
 				description = append(description, flag.Description)
