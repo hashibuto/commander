@@ -215,6 +215,19 @@ func (c *Command) Suggest(tokens []string, parentFlags []*Flag) []*ns.AutoComple
 			}
 		}
 
+		if len(c.SubCommands) > 0 {
+			sugg := []*ns.AutoComplete{}
+			for _, sub := range c.SubCommands {
+				if strings.HasPrefix(sub.Name, t) {
+					sugg = append(sugg, &ns.AutoComplete{
+						Value:   sub.Name,
+						Display: sub.Name,
+					})
+				}
+			}
+			return sugg
+		}
+
 		if len(c.Arguments) == 0 {
 			return nil
 		}
