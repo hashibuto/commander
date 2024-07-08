@@ -426,6 +426,12 @@ func (c *Command) getInvocation() string {
 }
 
 func (c *Command) GetHelpString(parentFlags []*Flag) string {
+	filteredFlags := []*Flag{}
+	for _, p := range parentFlags {
+		if p.Name != "help" {
+			filteredFlags = append(filteredFlags, p)
+		}
+	}
 	lines := []string{"Invocation:", c.getInvocation()}
 
 	if len(c.SubCommands) > 0 {
@@ -453,7 +459,7 @@ func (c *Command) GetHelpString(parentFlags []*Flag) string {
 		}
 	}
 
-	for i, flags := range [][]*Flag{parentFlags, c.Flags} {
+	for i, flags := range [][]*Flag{filteredFlags, c.Flags} {
 		if len(flags) == 0 {
 			continue
 		}
