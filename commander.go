@@ -37,7 +37,7 @@ type Capture struct {
 // NewCommander returns a new Commander instance
 func NewCommander(config Config) (*Commander, error) {
 	config.ApplyDefaults()
-	config.Commands = append(config.Commands, HelpCommand, GrepCommand, ClearCommand)
+	config.Commands = append(config.Commands, HelpCommand, GrepCommand, ClearCommand, ExitCommand)
 
 	c := &Commander{
 		Config: config,
