@@ -3,6 +3,7 @@ package commander
 type Config struct {
 	Prompt   string
 	Commands []*Command
+	DumpFile string // For debugging purposes, all input will be sent to this file, if set
 
 	AutoCompleteSuggestStyle string
 }
