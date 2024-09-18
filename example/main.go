@@ -118,6 +118,19 @@ func main() {
 					return nil
 				},
 			},
+			{
+				Name:        "process",
+				Description: "execute a process command",
+				SubCommands: []*commander.Command{
+					{
+						Name:        "list",
+						Description: "list processes",
+						OnExecute: func(c *commander.Command, args map[string]any, capturedInput []byte) error {
+							return nil
+						},
+					},
+				},
+			},
 		},
 	})
 	if err != nil {

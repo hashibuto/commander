@@ -260,6 +260,10 @@ func (c *Commander) shellExecutionFunc(shell *ns.NilShell, input string) {
 			continue
 		}
 
+		if bindExec.Command.OnExecute == nil {
+			Errorln("please specify a valid subcommand")
+			return
+		}
 		err := bindExec.Command.OnExecute(bindExec.Command, bindExec.ArgMap, capturedBytes)
 		if err != nil {
 			Errorln(err.Error())
