@@ -65,6 +65,7 @@ func NewCommander(config Config) (*Commander, error) {
 
 	c.commandMap = commandMap
 	c.shell = ns.NewShell(config.Prompt, c.shellCompletionFunc, c.shellExecutionFunc)
+	c.shell.DumpFile = config.DumpFile
 	c.shell.AutoCompleteSuggestStyle = c.Config.AutoCompleteSuggestStyle
 
 	return c, nil

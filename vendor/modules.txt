@@ -1,7 +1,7 @@
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
 github.com/davecgh/go-spew/spew
-# github.com/hashibuto/nilshell v0.2.3
+# github.com/hashibuto/nilshell v0.2.4
 ## explicit; go 1.19
 github.com/hashibuto/nilshell
 github.com/hashibuto/nilshell/pkg/term
