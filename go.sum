@@ -12,6 +12,8 @@ github.com/hashibuto/nilshell v0.2.4 h1:SVUNog4kFiLLyRvK1QcTvSAuqCQS0kabvhYIcwFi
 github.com/hashibuto/nilshell v0.2.4/go.mod h1:Syxr+r8/XHBypVKQUIPNz4TWEzTJN7x9kW81Flqj4hQ=
 github.com/hashibuto/nilshell v0.2.5 h1:PyebYf9LKqUvEM91V6k8qUyepFA3JWjj58/dmdl/hM0=
 github.com/hashibuto/nilshell v0.2.5/go.mod h1:Syxr+r8/XHBypVKQUIPNz4TWEzTJN7x9kW81Flqj4hQ=
+github.com/hashibuto/nilshell v0.2.6 h1:oD9rQIYso1F+k7za2tH3VY60c2BkmTEfji7rSRfXaH4=
+github.com/hashibuto/nilshell v0.2.6/go.mod h1:Syxr+r8/XHBypVKQUIPNz4TWEzTJN7x9kW81Flqj4hQ=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsTg=
