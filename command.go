@@ -134,7 +134,7 @@ func (c *Command) Validate(parentFlags map[string]struct{}) error {
 	return nil
 }
 
-func (c *Command) Suggest(tokens []string, parentFlags []*Flag) []*ns.AutoComplete {
+func (c *Command) Suggest(tokens []string, parentFlags []*Flag) *ns.Suggestions {
 	argNum := 0
 
 	allFlags := append(parentFlags, c.Flags...)
@@ -168,13 +168,13 @@ func (c *Command) Suggest(tokens []string, parentFlags []*Flag) []*ns.AutoComple
 				prefix := flagBody
 
 				if isFinal {
-					sugg := []*ns.AutoComplete{}
+					sugg := ns.NewSuggestions()
 					for _, f := range allFlags {
 						if strings.HasPrefix(f.ShortName, prefix) {
-							sugg = append(sugg, &ns.AutoComplete{
-								Value:   fmt.Sprintf("-%s", f.ShortName),
-								Display: fmt.Sprintf("%s  %s", f.GetInvocation(), f.Description),
-							})
+							sugg.Add(ns.NewSuggestion(
+								fmt.Sprintf("%s  %s", f.GetInvocation(), f.Description),
+								fmt.Sprintf("-%s", f.ShortName),
+							))
 						}
 					}
 
@@ -195,13 +195,13 @@ func (c *Command) Suggest(tokens []string, parentFlags []*Flag) []*ns.AutoComple
 				}
 				prefix := flagBody
 				if isFinal {
-					sugg := []*ns.AutoComplete{}
+					sugg := ns.NewSuggestions()
 					for _, f := range allFlags {
 						if strings.HasPrefix(f.Name, prefix) {
-							sugg = append(sugg, &ns.AutoComplete{
-								Value:   fmt.Sprintf("--%s", f.Name),
-								Display: fmt.Sprintf("%s  %s", f.GetInvocation(), f.Description),
-							})
+							sugg.Add(ns.NewSuggestion(
+								fmt.Sprintf("%s  %s", f.GetInvocation(), f.Description),
+								fmt.Sprintf("--%s", f.Name),
+							))
 						}
 					}
 
@@ -216,13 +216,10 @@ func (c *Command) Suggest(tokens []string, parentFlags []*Flag) []*ns.AutoComple
 		}
 
 		if len(c.SubCommands) > 0 {
-			sugg := []*ns.AutoComplete{}
+			sugg := ns.NewSuggestions()
 			for _, sub := range c.SubCommands {
 				if strings.HasPrefix(sub.Name, t) {
-					sugg = append(sugg, &ns.AutoComplete{
-						Value:   sub.Name,
-						Display: sub.Name,
-					})
+					sugg.Add(ns.NewSuggestion(sub.Name, sub.Name))
 				}
 			}
 			return sugg

@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/hashibuto/commander"
-	"github.com/hashibuto/nilshell/pkg/term"
+	"github.com/hashibuto/nilshell/pkg/termutils"
 	"gopkg.in/yaml.v3"
 )
 
@@ -25,14 +25,14 @@ const (
 func getProcesses(outputType string) error {
 	if outputType == "table" {
 		commander.Println(
-			term.PadRight(commander.Sprintf(commander.C_BOLD, "PID"), 12, 2),
-			term.PadRight(commander.Sprintf(commander.C_BOLD, "NAME"), 25, 2),
+			termutils.PadRight(commander.Sprintf(commander.C_BOLD, "PID"), 12, 2),
+			termutils.PadRight(commander.Sprintf(commander.C_BOLD, "NAME"), 25, 2),
 			commander.Sprintf(commander.C_BOLD, "INVOCATION"),
 		)
 		for _, procObj := range ProcessList {
 			commander.Println(
-				term.PadRight(fmt.Sprintf("%d", procObj.Id), 12, 2),
-				term.PadRight(procObj.Name, 25, 2),
+				termutils.PadRight(fmt.Sprintf("%d", procObj.Id), 12, 2),
+				termutils.PadRight(procObj.Name, 25, 2),
 				procObj.Invocation,
 			)
 		}
@@ -51,15 +51,15 @@ func getProcesses(outputType string) error {
 func getProcessGroups(outputType string) error {
 	if outputType == "table" {
 		commander.Println(
-			term.PadRight(commander.Sprintf(commander.C_BOLD, "GROUP"), 20, 2),
-			term.PadRight(commander.Sprintf(commander.C_BOLD, "PID"), 12, 2),
+			termutils.PadRight(commander.Sprintf(commander.C_BOLD, "GROUP"), 20, 2),
+			termutils.PadRight(commander.Sprintf(commander.C_BOLD, "PID"), 12, 2),
 			commander.Sprintf(commander.C_BOLD, "PROCESS"),
 		)
 		for _, groupObj := range ProcessGroups {
 			for _, processObj := range groupObj.Processes {
 				commander.Println(
-					term.PadRight(groupObj.Name, 20, 2),
-					term.PadRight(fmt.Sprintf("%d", processObj.Id), 12, 2),
+					termutils.PadRight(groupObj.Name, 20, 2),
+					termutils.PadRight(fmt.Sprintf("%d", processObj.Id), 12, 2),
 					processObj.Name,
 				)
 			}
@@ -78,7 +78,9 @@ func getProcessGroups(outputType string) error {
 
 func main() {
 	c, err := commander.NewCommander(commander.Config{
-		Prompt: commander.Sprintf(commander.FgColor(168, 94, 29), "demo", commander.FgColor(255, 235, 15), " » "),
+		PromptFunc: func() string {
+			return commander.Sprintf(commander.FgColor(168, 94, 29), "demo", commander.FgColor(255, 235, 15), " » ")
+		},
 		Commands: []*commander.Command{
 			{
 				Name:        "get",

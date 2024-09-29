@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	ns "github.com/hashibuto/nilshell"
-	"github.com/hashibuto/nilshell/pkg/term"
+	"github.com/hashibuto/nilshell/pkg/termutils"
 )
 
 const (
@@ -20,7 +20,7 @@ type Commander struct {
 	Config Config
 
 	commandMap map[string]*Command
-	shell      *ns.NilShell
+	shell      *ns.Reader
 }
 
 type BoundExec struct {
@@ -36,7 +36,6 @@ type Capture struct {
 
 // NewCommander returns a new Commander instance
 func NewCommander(config Config) (*Commander, error) {
-	config.ApplyDefaults()
 	config.Commands = append(config.Commands, HelpCommand, GrepCommand, ClearCommand, ExitCommand)
 
 	c := &Commander{
@@ -64,9 +63,11 @@ func NewCommander(config Config) (*Commander, error) {
 	}
 
 	c.commandMap = commandMap
-	c.shell = ns.NewShell(config.Prompt, c.shellCompletionFunc, c.shellExecutionFunc)
-	c.shell.DumpFile = config.DumpFile
-	c.shell.AutoCompleteSuggestStyle = c.Config.AutoCompleteSuggestStyle
+	c.shell = ns.NewReader(ns.ReaderConfig{
+		PromptFunction:     config.PromptFunc,
+		CompletionFunction: c.shellCompletionFunc,
+		ProcessFunction:    c.shellExecutionFunc,
+	})
 
 	return c, nil
 }
@@ -109,8 +110,8 @@ func (c *Commander) LocateCommand(tokens []string) (*Command, []*Flag, []string)
 
 // shellCompletionFunc is invoked when the user engages the tab completion feature of the shell.  this attempts to return
 // suggestions for completion.
-func (c *Commander) shellCompletionFunc(beforeAndCursor string, afterCursor string, full string) []*ns.AutoComplete {
-	autoComplete := []*ns.AutoComplete{}
+func (c *Commander) shellCompletionFunc(beforeAndCursor string, afterCursor string, full string) *ns.Suggestions {
+	autoComplete := ns.NewSuggestions()
 	tokenGroups := Tokenize(beforeAndCursor)
 	if len(tokenGroups) == 0 {
 		return nil
@@ -132,10 +133,7 @@ func (c *Commander) shellCompletionFunc(beforeAndCursor string, afterCursor stri
 		// attempt to lookup the command by partial match
 		for _, lookupCmd := range c.Config.Commands {
 			if strings.HasPrefix(lookupCmd.Name, remaining[0]) {
-				autoComplete = append(autoComplete, &ns.AutoComplete{
-					Value:   lookupCmd.Name,
-					Display: lookupCmd.Name,
-				})
+				autoComplete.Add(ns.NewSuggestion(lookupCmd.Name, lookupCmd.Name))
 			}
 		}
 
@@ -143,15 +141,19 @@ func (c *Commander) shellCompletionFunc(beforeAndCursor string, afterCursor stri
 	}
 
 	suggestions := command.Suggest(remaining, parentFlags)
-	autoComplete = append(autoComplete, suggestions...)
+	if suggestions != nil {
+		for _, s := range suggestions.Items {
+			autoComplete.Add(s)
+		}
+	}
 
 	return autoComplete
 }
 
-func (c *Commander) shellExecutionFunc(shell *ns.NilShell, input string) {
+func (c *Commander) shellExecutionFunc(input string) error {
 	tokenGroups := Tokenize(input)
 	if len(tokenGroups) == 0 {
-		return
+		return nil
 	}
 
 	// make sure the groups make sense first
@@ -161,17 +163,17 @@ func (c *Commander) shellExecutionFunc(shell *ns.NilShell, input string) {
 		if tokenGroup.FlowControl == FLOW_CONTROL_REDIRECT {
 			if i == 0 {
 				Errorln("nothing to redirect")
-				return
+				return nil
 			}
 
 			if i != len(tokenGroups)-1 {
 				Errorln("redirect to file must be the final operation in the sequence")
-				return
+				return nil
 			}
 
 			if len(tokenGroup.Tokens) != 1 {
 				Errorln("redirect must specify a single file path target")
-				return
+				return nil
 			}
 		}
 
@@ -185,25 +187,25 @@ func (c *Commander) shellExecutionFunc(shell *ns.NilShell, input string) {
 			command, parentFlags, remaining := c.LocateCommand(tokens)
 			if command == nil {
 				Errorln(fmt.Sprintf("unknown command \"%s\"", remaining[0]))
-				return
+				return nil
 			}
 
 			isHelp := slices.Contains(tokens, "--help")
 			if isHelp {
 				fmt.Println(command.GetHelpString(parentFlags))
-				return
+				return nil
 			}
 
 			argMap, err := command.ClassifyTokens(remaining, parentFlags)
 			if err != nil {
 				Errorln(err.Error())
-				return
+				return nil
 			}
 
 			for _, arg := range command.Arguments {
 				if _, exists := argMap[arg.Name]; !exists {
 					Errorln(fmt.Sprintf("missing argument \"%s\"", arg.Name))
-					return
+					return nil
 				}
 			}
 
@@ -212,7 +214,6 @@ func (c *Commander) shellExecutionFunc(shell *ns.NilShell, input string) {
 				Command:           command,
 				ArgMap:            argMap,
 			})
-
 		}
 	}
 
@@ -225,7 +226,7 @@ func (c *Commander) shellExecutionFunc(shell *ns.NilShell, input string) {
 			pipeRead, pipeWrite, err := os.Pipe()
 			if err != nil {
 				Errorln(err.Error())
-				return
+				return nil
 			}
 
 			os.Stdout = pipeWrite
@@ -248,27 +249,27 @@ func (c *Commander) shellExecutionFunc(shell *ns.NilShell, input string) {
 
 			if err != nil {
 				Errorln(err.Error())
-				return
+				return nil
 			}
 
 			if capture.Error != nil {
 				Errorln(err.Error())
-				return
+				return nil
 			}
 
 			// We don't capture terminal codes
-			capturedBytes = term.StripTerminalEscapeSequences(capture.Buffer.Bytes())
+			capturedBytes = termutils.StripTerminalEscapeSequences(capture.Buffer.Bytes())
 			continue
 		}
 
 		if bindExec.Command.OnExecute == nil {
 			Errorln("please specify a valid subcommand")
-			return
+			return nil
 		}
 		err := bindExec.Command.OnExecute(bindExec.Command, bindExec.ArgMap, capturedBytes)
 		if err != nil {
 			Errorln(err.Error())
-			return
+			return nil
 		}
 	}
 
@@ -278,11 +279,13 @@ func (c *Commander) shellExecutionFunc(shell *ns.NilShell, input string) {
 		err := os.WriteFile(target, capturedBytes, 0644)
 		if err != nil {
 			Errorln("unable to write to file ", target, ": ", err.Error())
-			return
+			return nil
 		}
 	}
+
+	return nil
 }
 
 func (c *Commander) Run() error {
-	return c.shell.ReadUntilTerm()
+	return c.shell.ReadLoop()
 }
