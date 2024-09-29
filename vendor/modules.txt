@@ -1,10 +1,13 @@
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
 github.com/davecgh/go-spew/spew
-# github.com/hashibuto/nilshell v0.2.7
+# github.com/hashibuto/nilshell v1.0.2
 ## explicit; go 1.19
 github.com/hashibuto/nilshell
-github.com/hashibuto/nilshell/pkg/term
+github.com/hashibuto/nilshell/pkg/termutils
+# github.com/hashibuto/nimble v0.6.2
+## explicit; go 1.19
+github.com/hashibuto/nimble
 # github.com/pmezard/go-difflib v1.0.0
 ## explicit
 github.com/pmezard/go-difflib/difflib

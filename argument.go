@@ -68,20 +68,17 @@ func (a *Argument) PopulateMap(value string, target map[string]any) error {
 	return nil
 }
 
-func (a *Argument) SuggestValues(prefix string) []*ns.AutoComplete {
+func (a *Argument) SuggestValues(prefix string) *ns.Suggestions {
 	if a.OneOf != nil {
-		values := []*ns.AutoComplete{}
+		suggestions := ns.NewSuggestions()
 		for _, oneOf := range a.OneOf {
 			oneOfStr := fmt.Sprintf("%s", oneOf)
 			if strings.HasPrefix(oneOfStr, prefix) {
-				values = append(values, &ns.AutoComplete{
-					Value:   oneOfStr,
-					Display: oneOfStr,
-				})
+				suggestions.Add(ns.NewSuggestion(oneOfStr, oneOfStr))
 			}
 		}
 
-		return values
+		return suggestions
 	}
 
 	if a.Completer != nil {

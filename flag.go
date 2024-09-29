@@ -156,16 +156,13 @@ func (f *Flag) PopulateDefault(target map[string]any) error {
 	return nil
 }
 
-func (f *Flag) SuggestValues(prefix string) []*ns.AutoComplete {
+func (f *Flag) SuggestValues(prefix string) *ns.Suggestions {
 	if f.OneOf != nil {
-		values := []*ns.AutoComplete{}
+		values := ns.NewSuggestions()
 		for _, oneOf := range f.OneOf {
 			oneOfStr := fmt.Sprintf("%s", oneOf)
 			if strings.HasPrefix(oneOfStr, prefix) {
-				values = append(values, &ns.AutoComplete{
-					Value:   oneOfStr,
-					Display: oneOfStr,
-				})
+				values.Add(ns.NewSuggestion(oneOfStr, oneOfStr))
 			}
 		}
 

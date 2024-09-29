@@ -1,14 +1,13 @@
 package commander
 
-import "os"
+import (
+	ns "github.com/hashibuto/nilshell"
+)
 
 var ExitCommand = &Command{
 	Name:        "exit",
 	Description: "exit the shell",
 	OnExecute: func(c *Command, args map[string]any, capturedInput []byte) error {
-		c.Commander.shell.Shutdown()
-		os.Exit(0)
-
-		return nil
+		return ns.ErrEof
 	},
 }
