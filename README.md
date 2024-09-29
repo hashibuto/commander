@@ -4,6 +4,7 @@ commander is an interactive command processor, similar to python's CMD2, but wri
 - full tab completion
 - contextual help
 - stdout piping and redirection
+- searchable command history
 
 # demo
 a brief screen recording showcasing some of commander's capabilities
