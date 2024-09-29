@@ -13,7 +13,7 @@ type Command struct {
 	Flags       []*Flag
 	Arguments   []*Argument
 	SubCommands []*Command
-	OnExecute   func(c *Command, args map[string]any, capturedInput []byte) error
+	OnExecute   func(c *Command, args ArgMap, capturedInput []byte) error
 
 	Commander  *Commander
 	commandMap map[string]*Command

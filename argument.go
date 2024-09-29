@@ -33,6 +33,11 @@ func (a *Argument) Validate() error {
 		if inferredType != a.ArgType {
 			return fmt.Errorf("value in OneOf \"%v\" did not match the argument type \"%s\"", oneOf, a.ArgType)
 		}
+		a.ArgType = inferredType
+	}
+
+	if a.AllowMultiple && a.ArgType == ArgTypeBool {
+		return fmt.Errorf("allowing multiple boolean values doesn't make sense")
 	}
 
 	return nil

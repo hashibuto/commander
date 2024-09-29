@@ -29,9 +29,9 @@ var GrepCommand = &Command{
 			DefaultValue: false,
 		},
 	},
-	OnExecute: func(c *Command, args map[string]any, capturedInput []byte) error {
-		pattern := args[PatternArg].(string)
-		insensitive := args[InsensitiveArg].(bool)
+	OnExecute: func(c *Command, args ArgMap, capturedInput []byte) error {
+		pattern := args.GetString(PatternArg)
+		insensitive := args.GetBool(InsensitiveArg)
 		lowerPattern := strings.ToLower(pattern)
 
 		if len(capturedInput) > 0 {
