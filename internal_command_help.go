@@ -8,7 +8,7 @@ import (
 var HelpCommand = &Command{
 	Name:        "help",
 	Description: "display contextual command help",
-	OnExecute: func(c *Command, args map[string]any, capturedInput []byte) error {
+	OnExecute: func(c *Command, args ArgMap, capturedInput []byte) error {
 		fmt.Println("Command list:")
 
 		commandList := []string{}

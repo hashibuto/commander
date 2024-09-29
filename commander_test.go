@@ -55,14 +55,14 @@ func (suite *CommanderTestSuite) SetupTest() {
 										DefaultValue: true,
 									},
 								},
-								OnExecute: func(c *Command, args map[string]any, capturedInput []byte) error {
+								OnExecute: func(c *Command, args ArgMap, capturedInput []byte) error {
 									return nil
 								},
 							},
 							{
 								Name:        "update",
 								Description: "update a snapshot",
-								OnExecute: func(c *Command, args map[string]any, capturedInput []byte) error {
+								OnExecute: func(c *Command, args ArgMap, capturedInput []byte) error {
 									return nil
 								},
 							},
@@ -77,7 +77,7 @@ func (suite *CommanderTestSuite) SetupTest() {
 								ShortName: "s",
 							},
 						},
-						OnExecute: func(c *Command, args map[string]any, capturedInput []byte) error {
+						OnExecute: func(c *Command, args ArgMap, capturedInput []byte) error {
 							return nil
 						},
 					},
@@ -93,7 +93,7 @@ func (suite *CommanderTestSuite) SetupTest() {
 								IsRequired: true,
 							},
 						},
-						OnExecute: func(c *Command, args map[string]any, capturedInput []byte) error {
+						OnExecute: func(c *Command, args ArgMap, capturedInput []byte) error {
 							return nil
 						},
 					},

@@ -7,7 +7,7 @@ import (
 var ExitCommand = &Command{
 	Name:        "exit",
 	Description: "exit the shell",
-	OnExecute: func(c *Command, args map[string]any, capturedInput []byte) error {
+	OnExecute: func(c *Command, args ArgMap, capturedInput []byte) error {
 		return ns.ErrEof
 	},
 }

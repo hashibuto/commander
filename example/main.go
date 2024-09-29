@@ -102,8 +102,8 @@ func main() {
 						OneOf:        []any{"json", "yaml", "table"},
 					},
 				},
-				OnExecute: func(c *commander.Command, args map[string]any, capturedInput []byte) error {
-					resourceType := ResourceType(args[ResourceTypeArg].(string))
+				OnExecute: func(c *commander.Command, args commander.ArgMap, capturedInput []byte) error {
+					resourceType := ResourceType(args.GetString(ResourceTypeArg))
 					outputType := args[OutputFlag].(string)
 
 					var err error
@@ -127,7 +127,7 @@ func main() {
 					{
 						Name:        "list",
 						Description: "list processes",
-						OnExecute: func(c *commander.Command, args map[string]any, capturedInput []byte) error {
+						OnExecute: func(c *commander.Command, args commander.ArgMap, capturedInput []byte) error {
 							return nil
 						},
 					},
